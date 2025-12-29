@@ -30,7 +30,7 @@ const ProjectTabs = () => {
     },
   ];
   return (
-    <div className="w-full">
+    <div className="w-full flex-1">
       <Tabs defaultValue="overview" className="gap-4 w-full">
         <TabsList className="bg-background rounded-none border-b p-0 w-full justify-start">
           {tabs.map((tab) => (
