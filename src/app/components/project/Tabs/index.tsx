@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsTrigger, TabsList } from "@/components/ui/tabs";
 import KanbanBoard from "../kanbanBoard";
+import { ProjectDetails } from "@/interface/common";
 
-const ProjectTabs = () => {
+const ProjectTabs = ({ projectDetails }: { projectDetails: ProjectDetails | undefined }) => {
   const tabs = [
     {
       name: "Overview",
@@ -11,7 +12,7 @@ const ProjectTabs = () => {
     {
       name: "Kanban board",
       value: "kanban-board",
-      content: <KanbanBoard />,
+      content: <KanbanBoard taskStatuses={projectDetails?.taskStatuses || []} />,
     },
     {
       name: "Timeline",
@@ -29,6 +30,7 @@ const ProjectTabs = () => {
       content: "Settings of the project",
     },
   ];
+
   return (
     <div className="w-full flex-1">
       <Tabs defaultValue="overview" className="gap-4 w-full">

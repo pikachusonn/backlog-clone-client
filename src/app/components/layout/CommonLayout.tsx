@@ -4,6 +4,8 @@ import { CiCalendar } from "react-icons/ci";
 import { FaThreads } from "react-icons/fa6";
 import { IoChatbubblesOutline, IoNotificationsOutline } from "react-icons/io5";
 import AppSidebar from "../common/Sidebar";
+import { useQuery } from "@tanstack/react-query";
+import { getParticipatedProjects } from "@/api/project";
 const CommonLayout = ({
   children,
   activeProjectId,
@@ -48,24 +50,12 @@ const CommonLayout = ({
     },
   ];
 
-  const projects = [
-    {
-      name: "Project 1",
-      image:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSioUd0qWL9XkRAGsjyeMDJ5N6nK0uJ0zzjtg&s",
-    },
-    {
-      name: "Project 2",
-      image: "https://pbs.twimg.com/media/G0gq3CLW4AAYUWy.png",
-    },
-    {
-      name: "Project 3",
-      image: "https://pbs.twimg.com/media/G0dDozkWcAAaG65.jpg",
-    },
-  ];
   return (
     <SidebarProvider>
-      <AppSidebar items={items} projects={projects} activeProjectId={activeProjectId} />
+      <AppSidebar
+        items={items}
+        activeProjectId={activeProjectId}
+      />
       <main className="w-full">
         {/* <SidebarTrigger/> */}
         <div className="w-full">{children}</div>

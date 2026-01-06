@@ -29,6 +29,9 @@ import CorporationMenu from "./CorporationMenu";
 import styles from "./style.module.css";
 import CollapsedProjectPopover from "./CollapsedProjectPopover";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { getParticipatedProjects } from "@/api/project";
 interface SidebarSubItem {
   title: string;
   url: string;
@@ -43,15 +46,26 @@ interface SidebarItem {
 
 const AppSidebar = ({
   items,
-  projects,
   activeProjectId,
 }: {
   items: SidebarItem[];
-  projects?: any[];
   activeProjectId?: string;
 }) => {
   const { open } = useSidebar();
   const router = useRouter();
+
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["participated-projects"],
+    queryFn: getParticipatedProjects,
+  });
+
+  const renderDefaultProjectCover = (projectName: string) => {
+    return (
+      <div className="w-[35px]! h-[35px] shrink-0 rounded-full bg-rose-500 text-white text-center flex items-center justify-center text-[18px] font-medium">
+        {projectName.charAt(0)}
+      </div>
+    );
+  };
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader
@@ -130,32 +144,49 @@ const AppSidebar = ({
         <SidebarGroup className="border-y py-2 px-0">
           {/* <SidebarGroupLabel>Application</SidebarGroupLabel> */}
           <SidebarGroupContent>
-            <SidebarMenu className="flex flex-col gap-2">
-              {projects &&
+            <SidebarMenu
+              className={`flex flex-col ${isLoading ? "gap-5" : "gap-2"}`}
+            >
+              {isLoading &&
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div className="flex items-center space-x-4" key={index}>
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-[170px]" />
+                      <Skeleton className="h-5 w-[150px]" />
+                    </div>
+                  </div>
+                ))}
+              {!isLoading &&
+                projects &&
                 projects.length > 0 &&
-                projects.map((project, index) => (
+                projects.map((project: any) => (
                   <div
                     className={`flex gap-3 items-center w-full ${
-                      activeProjectId === index.toString()
+                      activeProjectId === project.id
                         ? "bg-neutral-800 text-white"
                         : "hover:bg-accent"
                     } cursor-pointer p-2`}
-                    key={index}
+                    key={project.id}
                     onClick={() => {
-                      router.push(`/project/${index}`);
+                      router.push(`/project/${project.id}`);
                     }}
                   >
                     {open ? (
-                      <img
-                        src={project.image}
-                        alt={project.name}
-                        className={`rounded-full object-cover object-center w-[35px] h-[35px] border border-neutral-400 shadow-lg`}
-                      />
+                      !!project.coverImage ? (
+                        <img
+                          src={project.coverImage}
+                          alt={project.name}
+                          className={`rounded-full object-cover object-center w-[35px] aspect-square border border-neutral-400 shadow-lg`}
+                        />
+                      ) : (
+                        renderDefaultProjectCover(project.name)
+                      )
                     ) : (
                       <CollapsedProjectPopover
                         popOverTrigger={
                           <img
-                            src={project.image}
+                            src={project.coverImage}
                             alt={project.name}
                             className={`rounded-full object-cover object-center w-[30px] h-[30px] border border-neutral-400 shadow-lg`}
                           />
@@ -163,23 +194,24 @@ const AppSidebar = ({
                       />
                     )}
                     {open && (
-                      <>
+                      <div className="flex items-center justify-between w-full">
                         <div className="flex-1 flex-col">
-                          <p className="text-sm font-medium leading-4">
+                          <p
+                            className="text-sm font-medium leading-4 truncate max-w-[150px]"
+                            title={project.name}
+                          >
                             {project.name}
                           </p>
                           <span
                             className={`text-xs leading-4 text-muted-foreground ${
-                              activeProjectId === index.toString()
-                                ? "text-white"
-                                : ""
+                              activeProjectId === project.id ? "text-white" : ""
                             }`}
                           >
                             1 new update
                           </span>
                         </div>
                         <BsThreeDots size={20} />
-                      </>
+                      </div>
                     )}
                   </div>
                 ))}
