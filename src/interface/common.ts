@@ -38,3 +38,8 @@ export interface ProjectDetails {
     taskStatuses: TaskStatus[];
     projectCollaborators: projectCollaborator[];
 }
+
+export interface SelectItem {
+    label: string;
+    value: string;
+}

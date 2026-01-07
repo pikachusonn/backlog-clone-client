@@ -8,14 +8,19 @@ import { PiSlidersHorizontal } from "react-icons/pi";
 import { MdLocalFireDepartment } from "react-icons/md";
 import { BiTask } from "react-icons/bi";
 import { TaskStatus } from "@/interface/common";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { getTasksOfProject } from "@/api/task";
 import AssigneePopover from "./AssigneePopover";
 import { getProjectDetails } from "@/api/project";
 import { GoPlus } from "react-icons/go";
+import AddEditTaskDialog from "./AddEditTaskDialog";
+import { format } from "date-fns";
+import { useState } from "react";
 const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
   const param = useParams();
+  const [openAddTaskDialog, setOpenAddTaskDialog] = useState(false);
+  const queryClient = useQueryClient();
   const projectId = param.id as string;
   const { data: tasks } = useQuery({
     queryKey: ["tasks", projectId],
@@ -45,11 +50,10 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
               <img
                 src={c?.targetAccount?.avatar}
                 alt={c?.targetAccount?.email}
-                className={`w-[30px] h-[30px] rounded-full object-cover border border-black/50 border-2 relative z-${index} left-[${
-                  index * -10
-                }px]
+                className={`w-[30px] h-[30px] rounded-full object-cover border border-black/50 border-2 relative z-${index} 
                 } ${c?.projectRole === "OWNER" ? "border-orange-500" : ""}`}
                 key={c?.id}
+                style={{ left: `${index * -10}px` }}
               />
             ) : (
               <span
@@ -103,7 +107,9 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
                           {!!task.dueDate && (
                             <div className="flex items-center gap-2 border rounded w-fit px-2">
                               <CiCalendar />
-                              <span className="text-sm">{task.dueDate}</span>
+                              <span className="text-sm">
+                                {format(new Date(task.dueDate), "MMM dd, yyyy")}
+                              </span>
                               {indexTask === 2 && (
                                 <MdLocalFireDepartment className="text-orange-500" />
                               )}
@@ -134,10 +140,30 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
                   </div>
                 </div>
                 {taskStatus?.statusOrder === 0 && (
-                  <div className=" hover:bg-neutral-200 rounded-md p-2 font-semibold mx-2 flex items-center gap-2 cursor-pointer">
-                    <GoPlus />
-                    Create
-                  </div>
+                  <AddEditTaskDialog
+                    open={openAddTaskDialog}
+                    onOpenChange={setOpenAddTaskDialog}
+                    projectId={projectId}
+                    assigneeOptions={
+                      projectDetails?.projectCollaborators?.map((c) => ({
+                        label: c?.targetAccount?.email,
+                        value: c?.id,
+                        avatarUrl: c?.targetAccount?.avatar,
+                      })) || []
+                    }
+                    dialogTrigger={
+                      <div className=" hover:bg-neutral-200 rounded-md p-2 font-semibold mx-2 flex items-center gap-2 cursor-pointer">
+                        <GoPlus />
+                        Create
+                      </div>
+                    }
+                    onCancel={() => {
+                      setOpenAddTaskDialog(false);
+                    }}
+                    onSave={() => {
+                      setOpenAddTaskDialog(false);
+                    }}
+                  />
                 )}
               </div>
             );
