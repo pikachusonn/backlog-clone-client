@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { updateTaskAssignee } from "@/api/task";
+import { updateTask, updateTaskAssignee } from "@/api/task";
 import CommonTooltip from "@/app/components/common/CommonTooltip";
 import {
   Popover,
@@ -15,8 +15,9 @@ interface Props {
   assignee: any;
   assigneeList?: any[];
   taskId: string;
+  popoverTrigger: React.ReactNode;
 }
-const AssigneePopover = ({ assignee, assigneeList, taskId }: Props) => {
+const AssigneePopover = ({ assignee, assigneeList, taskId, popoverTrigger }: Props) => {
   const queryClient = useQueryClient();
   const param = useParams();
   const projectId = param.id as string;
@@ -28,11 +29,15 @@ const AssigneePopover = ({ assignee, assigneeList, taskId }: Props) => {
       taskId: string;
       assigneeId: string;
     }) =>
-      updateTaskAssignee({
-        taskId,
+      updateTask(taskId, {
         assigneeId,
       }),
     onSuccess: (response) => {
+      queryClient.setQueryData(["taskDetail", taskId], (old: any) => {
+        if (!old) return old;
+        return response;
+      });
+
       queryClient.setQueryData(["tasks", projectId], (oldData: any) => {
         if (!oldData) {
           return [];
@@ -53,24 +58,8 @@ const AssigneePopover = ({ assignee, assigneeList, taskId }: Props) => {
     <Popover>
       <CommonTooltip
         trigger={
-          <PopoverTrigger asChild>
-            {assignee ? (
-              assignee?.targetAccount?.avatar ? (
-                <img
-                  src={assignee?.targetAccount?.avatar}
-                  alt={assignee?.targetAccount?.name}
-                  className="rounded-full aspect-square w-[28px] object-cover object-center border border-black/50"
-                />
-              ) : (
-                <span className="bg-orange-300 font-medium rounded-full text-sm aspect-square w-[24px] text-center flex items-center justify-center">
-                  S
-                </span>
-              )
-            ) : (
-              <span className="bg-gray-300 font-medium rounded-full text-sm aspect-square w-[24px] text-center flex items-center justify-center">
-                <CiUser />
-              </span>
-            )}
+          <PopoverTrigger asChild data-no-dnd={true}>
+            {popoverTrigger}
           </PopoverTrigger>
         }
         content={`Assignee: ${assignee?.targetAccount?.email}`}
@@ -83,7 +72,8 @@ const AssigneePopover = ({ assignee, assigneeList, taskId }: Props) => {
               className={`flex items-center gap-2 hover:bg-neutral-300 rounded-md cursor-pointer p-2 ${
                 assigneeItem.id === assignee?.id ? "bg-neutral-200" : ""
               }`}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (assigneeItem.id === assignee?.id) return;
                 updateAssigneeMutation.mutate({
                   taskId,

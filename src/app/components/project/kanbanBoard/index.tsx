@@ -1,25 +1,35 @@
+"use client";
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CiCalendar } from "react-icons/ci";
-import { IoIosBug, IoIosSearch } from "react-icons/io";
+import { IoIosSearch } from "react-icons/io";
 import { PiSlidersHorizontal } from "react-icons/pi";
-import { MdLocalFireDepartment } from "react-icons/md";
-import { BiTask } from "react-icons/bi";
 import { TaskStatus } from "@/interface/common";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { getTasksOfProject } from "@/api/task";
-import AssigneePopover from "./AssigneePopover";
+import { getTasksOfProject, updateTaskStatus } from "@/api/task";
 import { getProjectDetails } from "@/api/project";
-import { GoPlus } from "react-icons/go";
-import AddEditTaskDialog from "./AddEditTaskDialog";
-import { format } from "date-fns";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import KanbanBoardColumn from "./KanbanBoardColumn";
+import KanbanCard from "./KanbanCard";
+import { SafePointerSensor } from "./PointSensor";
+import toast from "react-hot-toast";
+import { Task } from "@/interface/kanban";
+import TaskDetailDialog from "./TaskDetailDialog";
 const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
   const param = useParams();
   const [openAddTaskDialog, setOpenAddTaskDialog] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const projectId = param.id as string;
   const { data: tasks } = useQuery({
@@ -28,11 +38,31 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
     enabled: !!projectId,
   });
 
+  const { mutate: updateTaskStatusMutation } = useMutation({
+    mutationFn: ({ taskId, statusId }: { taskId: string; statusId: string }) =>
+      updateTaskStatus({ taskId, statusId }),
+    onSuccess: (response, variables) => {
+      console.log(response, variables);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const { data: projectDetails } = useQuery({
     queryKey: ["project-details", projectId],
     queryFn: () => getProjectDetails(projectId),
     enabled: !!projectId,
   });
+
+  const sensors = useSensors(
+    useSensor(SafePointerSensor),
+    // useSensor(MouseSensor, {
+    //   activationConstraint: {
+    //     distance: 5,
+    //   },
+    // })
+  );
 
   return (
     <div className="flex flex-col gap-2 h-[calc(100vh-125px)]">
@@ -69,106 +99,83 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
           <PiSlidersHorizontal />
         </Button>
       </div>
-      <div className="flex flex-1 gap-3 items-stretch pb-2">
-        {taskStatuses
-          ?.sort(
-            (a: TaskStatus, b: TaskStatus) => a.statusOrder - b.statusOrder
-          )
-          ?.map((taskStatus) => {
-            console.log();
-
-            const tasksOfStatus = tasks?.data.filter(
-              (task: any) => task.taskStatusId === taskStatus.id
-            );
-            return (
-              <div
-                key={taskStatus.id}
-                className="flex w-[280px] bg-neutral-100 rounded-md border border-neutral-2/5000 flex-col gap-2 pb-2"
-              >
-                <div className="flex flex-col gap-2 flex-1">
-                  <div className="py-2 px-4 flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: taskStatus.color }}
-                    ></div>
-                    <span>{taskStatus.text}</span>
-                    <span className="text-sm bg-gray-200 rounded-full px-3 font-medium">
-                      {tasksOfStatus?.length}
-                    </span>
-                  </div>
-                  <div className="bg-neutral-100 pb-2">
-                    <div className="max-h-[calc(100dvh-234px)] p-1 flex flex-col gap-2 overflow-y-auto">
-                      {tasksOfStatus?.map((task: any, indexTask: number) => (
-                        <div
-                          key={indexTask}
-                          className="w-full bg-white rounded border p-3 flex flex-col gap-2"
-                        >
-                          <span>{task.name}</span>
-                          {!!task.dueDate && (
-                            <div className="flex items-center gap-2 border rounded w-fit px-2">
-                              <CiCalendar />
-                              <span className="text-sm">
-                                {format(new Date(task.dueDate), "MMM dd, yyyy")}
-                              </span>
-                              {indexTask === 2 && (
-                                <MdLocalFireDepartment className="text-orange-500" />
-                              )}
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              {indexTask % 2 === 0 ? (
-                                <BiTask className="text-blue-500" />
-                              ) : (
-                                <IoIosBug className="text-red-500" />
-                              )}
-                              <span className="text-sm">
-                                BC-{indexTask + 1}
-                              </span>
-                            </div>
-                            <AssigneePopover
-                              assignee={task.assignee}
-                              assigneeList={
-                                projectDetails?.projectCollaborators
-                              }
-                              taskId={task.id}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {taskStatus?.statusOrder === 0 && (
-                  <AddEditTaskDialog
-                    open={openAddTaskDialog}
-                    onOpenChange={setOpenAddTaskDialog}
-                    projectId={projectId}
-                    assigneeOptions={
-                      projectDetails?.projectCollaborators?.map((c) => ({
-                        label: c?.targetAccount?.email,
-                        value: c?.id,
-                        avatarUrl: c?.targetAccount?.avatar,
-                      })) || []
-                    }
-                    dialogTrigger={
-                      <div className=" hover:bg-neutral-200 rounded-md p-2 font-semibold mx-2 flex items-center gap-2 cursor-pointer">
-                        <GoPlus />
-                        Create
-                      </div>
-                    }
-                    onCancel={() => {
-                      setOpenAddTaskDialog(false);
-                    }}
-                    onSave={() => {
-                      setOpenAddTaskDialog(false);
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
-      </div>
+      <DndContext
+        sensors={sensors}
+        onDragStart={({ active }) => {
+          setActiveTaskId(active.id as string);
+        }}
+        onDragEnd={({ active, over }) => {
+          setActiveTaskId(null);
+          if (!over) return;
+          queryClient.setQueryData(["tasks", projectId], (old: any) => {
+            if (!old?.data) return old;
+            const task = old.data.find((t: any) => t.id === active.id);
+            if (!task || task.taskStatusId === over.id) {
+              return old;
+            }
+            return {
+              ...old,
+              data: old.data.map((t: any) =>
+                t.id === active.id
+                  ? { ...t, taskStatusId: over.id as string }
+                  : t
+              ),
+            };
+          });
+          if (over.id !== active?.data?.current?.taskStatusId) {
+            updateTaskStatusMutation({
+              taskId: active.id as string,
+              statusId: over.id as string,
+            });
+          }
+        }}
+        onDragCancel={() => setActiveTaskId(null)}
+      >
+        <div className="flex flex-1 gap-3 items-stretch pb-2">
+          {taskStatuses
+            ?.sort(
+              (a: TaskStatus, b: TaskStatus) => a.statusOrder - b.statusOrder
+            )
+            ?.map((taskStatus) => {
+              const tasksOfStatus = tasks?.data.filter(
+                (task: any) => task.taskStatusId === taskStatus.id
+              );
+              return (
+                <KanbanBoardColumn
+                  openAddTaskDialog={openAddTaskDialog}
+                  projectId={projectId}
+                  projectDetails={projectDetails}
+                  setOpenAddTaskDialog={setOpenAddTaskDialog}
+                  taskStatus={taskStatus}
+                  tasksOfStatus={tasksOfStatus}
+                  key={taskStatus.id}
+                  setEditTask={setEditTask}
+                />
+              );
+            })}
+        </div>
+        <DragOverlay>
+          {activeTaskId ? (
+            <KanbanCard
+              task={tasks?.data.find((t: any) => t.id === activeTaskId)}
+              indexTask={-1}
+              projectDetails={projectDetails}
+              taskStatuses={taskStatuses}
+              setEditTask={setEditTask}
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+      {!!editTask && (
+        <TaskDetailDialog
+          open={!!editTask}
+          projectDetails={projectDetails}
+          onOpenChange={setEditTask}
+          onCancel={() => setEditTask(null)}
+          onSave={() => setEditTask(null)}
+          task={editTask}
+        />
+      )}
     </div>
   );
 };

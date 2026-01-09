@@ -1,3 +1,4 @@
+import { TASK_PRIORITY, TASK_TYPE } from "../constant/task";
 export interface Task {
     id: string;
     name: string;
@@ -9,6 +10,17 @@ export interface Task {
     startDate?: string;
     dueDate?: string;
     assignee: Assignee;
+    priority: TASK_PRIORITY;
+    type: TASK_TYPE;
+    attachments: Attachment[];
+}
+
+export interface Attachment {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    createdAt: string;
 }
 
 export interface Assignee {
@@ -42,4 +54,17 @@ export interface ICreateTaskPayload {
     attachments: ICreateTaskAttachment[];
     startDate?: string;
     dueDate?: string;
+    priority: TASK_PRIORITY;
+    type: TASK_TYPE;
+}
+
+export interface IUpdateTaskPayload {
+    name?: string;
+    description?: string;
+    assigneeId?: string;
+    taskStatusId?: string;
+    startDate?: string;
+    dueDate?: string;
+    priority?: TASK_PRIORITY;
+    type?: TASK_TYPE;
 }

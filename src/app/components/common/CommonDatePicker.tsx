@@ -56,9 +56,11 @@ export function CommonDatePicker({
 
   return (
     <div className="flex flex-col gap-1">
-      <Label htmlFor="date" className="px-1">
-        {label}
-      </Label>
+      {label && (
+        <Label htmlFor="date" className="px-1">
+          {label}
+        </Label>
+      )}
       <div className={cn("relative flex gap-2", className)}>
         <Input
           id="date"
