@@ -53,16 +53,21 @@ const AssigneePopover = ({ assignee, assigneeList, taskId }: Props) => {
     <Popover>
       <CommonTooltip
         trigger={
-          <PopoverTrigger asChild>
+          <PopoverTrigger asChild data-no-dnd={true}>
             {assignee ? (
               assignee?.targetAccount?.avatar ? (
                 <img
+                  data-dnd-ignore
                   src={assignee?.targetAccount?.avatar}
                   alt={assignee?.targetAccount?.name}
                   className="rounded-full aspect-square w-[28px] object-cover object-center border border-black/50"
+                  onClick={(e) => e.stopPropagation()}
                 />
               ) : (
-                <span className="bg-orange-300 font-medium rounded-full text-sm aspect-square w-[24px] text-center flex items-center justify-center">
+                <span
+                  data-dnd-ignore
+                  className="bg-orange-300 font-medium rounded-full text-sm aspect-square w-[24px] text-center flex items-center justify-center"
+                >
                   S
                 </span>
               )

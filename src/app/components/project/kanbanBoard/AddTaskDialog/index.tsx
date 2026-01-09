@@ -25,14 +25,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  TASK_PRIORITY,
+  TASK_PRIORITY_OPTIONS,
+  TASK_TYPE,
+  TASK_TYPE_OPTIONS,
+} from "@/constant/task";
 import { SelectItem as SelectItemType } from "@/interface/common";
 import { ICreateTaskPayload } from "@/interface/kanban";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { BiTask } from "react-icons/bi";
+import { FaChevronUp } from "react-icons/fa6";
+import { IoIosBug } from "react-icons/io";
 import z from "zod";
-
+import styles from "../styles.module.css";
 interface AssigneeOption extends SelectItemType {
   avatarUrl?: string;
 }
@@ -46,7 +56,7 @@ interface Props {
   onSave: () => void;
   projectId: string;
 }
-const AddEditTaskDialog = ({
+const AddTaskDialog = ({
   open,
   onOpenChange,
   dialogTrigger,
@@ -63,12 +73,18 @@ const AddEditTaskDialog = ({
     attachments: z.array(z.instanceof(File)).optional().nullable(),
     startDate: z.date().optional(),
     dueDate: z.date().optional(),
+    priority: z.enum(TASK_PRIORITY),
+    type: z.enum(TASK_TYPE),
   });
 
   const form = useForm<z.infer<typeof createTaskSchema>>({
     resolver: zodResolver(createTaskSchema),
     mode: "onChange",
     reValidateMode: "onChange",
+    defaultValues: {
+      priority: TASK_PRIORITY.MEDIUM,
+      type: TASK_TYPE.TASK,
+    },
   });
 
   const { mutate: createTaskMutation } = useMutation({
@@ -88,6 +104,7 @@ const AddEditTaskDialog = ({
   });
 
   const handleSubmit = (data: z.infer<typeof createTaskSchema>) => {
+    console.log(data);
     //todo: upload attachments to cloud
     const attachments = data.attachments?.map((attachment: File) => {
       return {
@@ -106,6 +123,8 @@ const AddEditTaskDialog = ({
       startDate: data.startDate?.toISOString(),
       dueDate: data.dueDate?.toISOString(),
       description: data.description,
+      priority: data.priority,
+      type: data.type,
     };
 
     createTaskMutation(payload);
@@ -269,6 +288,125 @@ const AddEditTaskDialog = ({
                   )}
                 />
               </div>
+
+              <div className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <div className="flex-1">
+                          <Label htmlFor="type">
+                            Task Type<span className="text-red-500">*</span>
+                          </Label>
+                          <CommonSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            triggerClass="mt-1"
+                            selectItems={TASK_TYPE_OPTIONS}
+                            placeholder="Select Task Type"
+                            content={
+                              <SelectContent side="bottom">
+                                {TASK_TYPE_OPTIONS.map((item, index) => (
+                                  <SelectItem key={index} value={item.value}>
+                                    {item.value === TASK_TYPE.TASK ? (
+                                      <BiTask className="text-blue-500" />
+                                    ) : (
+                                      <IoIosBug className="text-red-500" />
+                                    )}
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <div className="flex-1">
+                          <Label htmlFor="type">
+                            Task Priority<span className="text-red-500">*</span>
+                          </Label>
+                          <CommonSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            triggerClass="mt-1"
+                            selectItems={TASK_PRIORITY_OPTIONS}
+                            placeholder="Select Task Type"
+                            content={
+                              <SelectContent side="bottom">
+                                {TASK_PRIORITY_OPTIONS.map((item, index) => (
+                                  <SelectItem key={index} value={item.value}>
+                                    <div
+                                      className={cn(
+                                        "flex flex-col",
+                                        styles.selectIcon
+                                      )}
+                                    >
+                                      {Array.from({ length: index + 1 }).map(
+                                        (_, index) => (
+                                          <FaChevronUp
+                                            key={index}
+                                            className={cn(
+                                              "relative",
+                                              styles.selectIcon,
+                                              {
+                                                "text-green-500":
+                                                  item.value ===
+                                                  TASK_PRIORITY.LOW,
+                                                "text-blue-500":
+                                                  item.value ===
+                                                  TASK_PRIORITY.MEDIUM,
+                                                "text-red-500":
+                                                  item.value ===
+                                                  TASK_PRIORITY.HIGH,
+                                              },
+                                              {
+                                                "bottom-[3px]": index === 2,
+                                                "top-[3px]":
+                                                  index === 0 &&
+                                                  item.value ===
+                                                    TASK_PRIORITY.HIGH,
+                                              },
+                                              {
+                                                "bottom-[2px]":
+                                                  index === 1 &&
+                                                  item.value ===
+                                                    TASK_PRIORITY.MEDIUM,
+                                                "top-[2px]":
+                                                  index === 0 &&
+                                                  item.value ===
+                                                    TASK_PRIORITY.MEDIUM,
+                                              }
+                                            )}
+                                            // size={50}
+                                          />
+                                        )
+                                      )}
+                                    </div>
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <DialogFooter>
@@ -286,4 +424,4 @@ const AddEditTaskDialog = ({
   );
 };
 
-export default AddEditTaskDialog;
+export default AddTaskDialog;
