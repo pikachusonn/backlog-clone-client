@@ -1,0 +1,25 @@
+.selectIcon {
+  svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  &:nth-child(3) {
+    svg {
+      &:first-child {
+        top: 3px;
+      }
+
+      &:nth-child(3) {
+        bottom: 3px;
+      }
+    }
+  }
+}
+
+.selectIconTaskType {
+  svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+}

@@ -1,4 +1,3 @@
-"use client";
 import CommonLayout from "./components/layout/CommonLayout";
 export default function Home() {
   return (

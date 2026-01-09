@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsTrigger, TabsList } from "@/components/ui/tabs";
 import KanbanBoard from "../kanbanBoard";
 import { ProjectDetails } from "@/interface/common";
+import ProjectSetting from "../setting";
 
 const ProjectTabs = ({ projectDetails }: { projectDetails: ProjectDetails | undefined }) => {
   const tabs = [
@@ -27,7 +28,7 @@ const ProjectTabs = ({ projectDetails }: { projectDetails: ProjectDetails | unde
     {
       name: "Settings",
       value: "settings",
-      content: "Settings of the project",
+      content: <ProjectSetting />,
     },
   ];
 
