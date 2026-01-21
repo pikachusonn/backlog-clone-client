@@ -49,8 +49,6 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
     enabled: !!projectId,
   });
 
-  console.log(projectDetails);
-
   const sensors = useSensors(
     useSensor(SafePointerSensor)
     // useSensor(MouseSensor, {
