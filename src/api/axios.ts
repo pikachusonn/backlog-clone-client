@@ -152,7 +152,7 @@ export const sendPost = <T = any>(
         .then((res) => res.data);
 export const sendPut = <T = any>(url: string, params?: any, queryParams?: any) =>
     axiosInstance.put<T>(url, params, { params: queryParams }).then((res) => res.data);
-export const sendPatch = (url: string, params?: any) =>
-    axiosInstance.patch(url, params).then((res) => res.data);
+export const sendPatch = <T = any>(url: string, params?: any, queryParams?: any) =>
+    axiosInstance.patch<T>(url, params, { params: queryParams }).then((res) => res.data);
 export const sendDelete = (url: string, params?: any) =>
     axiosInstance.delete(url, { params }).then((res) => res.data);

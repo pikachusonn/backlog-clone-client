@@ -13,7 +13,7 @@ export const updateTaskAssignee = async ({ taskId, assigneeId }: { taskId: strin
 }
 
 export const updateTaskStatus = async ({ taskId, statusId }: { taskId: string, statusId: string }) => {
-    return sendPut('/tasks/update-status', null, { taskId, statusId });
+    return sendPatch('/tasks/update-status', null, { taskId, statusId });
 }
 
 export const createTask = async (payload: ICreateTaskPayload) => {

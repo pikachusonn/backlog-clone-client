@@ -10,15 +10,16 @@ import {
   MarkerType,
   BezierEdge,
   useReactFlow,
+  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { getTaskStatusesOfProject } from "@/api/taskStatus";
-import { getProjectTransitions } from "@/api/transition";
+import { createTransition, getProjectTransitions } from "@/api/transition";
 import { Button } from "@/components/ui/button";
 import { FaPlus } from "react-icons/fa6";
-import { TaskStatus } from "@/interface/setting";
+import { CreateTransitionDto } from "@/interface/setting";
 import CreateStatusDialog from "./CreateStatusDialog";
 import { IoChatbubblesOutline, IoTrashOutline } from "react-icons/io5";
 import { Input } from "@/components/ui/input";
@@ -46,8 +47,9 @@ const edgeTypes = {
 const ProjectSetting = () => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
   const [openAddNewStatusDialog, setOpenAddNewStatusDialog] = useState(false);
+  const queryClient = useQueryClient();
   const param = useParams();
   const projectId = param.id as string;
   const { data: taskStatuses } = useQuery({
@@ -60,6 +62,12 @@ const ProjectSetting = () => {
     queryFn: () => getProjectTransitions(projectId),
     enabled: !!projectId,
   });
+  const createTransitionMutation = useMutation({
+    mutationFn: (payload: CreateTransitionDto) => createTransition(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transitions", projectId] });
+    }
+  })
 
   const initialNodes = useMemo(() => {
     return (
@@ -125,8 +133,15 @@ const ProjectSetting = () => {
     []
   );
   const onConnect = useCallback(
-    (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    []
+    (params) => {
+      setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot));
+      createTransitionMutation.mutate({
+        projectId,
+        fromTaskStatusId: params.source,
+        toTaskStatusId: params.target,
+      });
+    },
+    [createTransitionMutation, projectId],
   );
   return (
     <div className="w-full flex flex-col gap-4">
@@ -168,38 +183,53 @@ const ProjectSetting = () => {
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-4">
-        <span className="font-medium">Manage Workflow</span>
-        <div
-          style={{ width: "70%", height: "calc(100dvh - 300px)" }}
-          className="relative border rounded-md"
-        >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            edgeTypes={edgeTypes}
-            fitView
+      <div className="pb-4 flex items-start gap-4">
+        <div className="flex flex-col gap-6" style={{ width: "75%" }}>
+          <span className="font-medium">Manage Workflow</span>
+          <div
+            style={{ height: "calc(100dvh - 300px)" }}
+            className="relative border rounded-md"
           >
-            <Background variant={BackgroundVariant.Dots} />
-          </ReactFlow>
-          <Button
-            className="absolute bottom-[40px] right-[40px] cursor-pointer"
-            onClick={() => setOpenAddNewStatusDialog(true)}
-          >
-            <FaPlus size={20} />
-          </Button>
-          {openAddNewStatusDialog && (
-            <CreateStatusDialog
-              open={openAddNewStatusDialog}
-              onOpenChange={setOpenAddNewStatusDialog}
-              onCancel={() => setOpenAddNewStatusDialog(false)}
-              onSave={() => setOpenAddNewStatusDialog(false)}
-            />
-          )}
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              edgeTypes={edgeTypes}
+              fitView
+            >
+              <Background variant={BackgroundVariant.Dots} />
+            </ReactFlow>
+            <Button
+              className="absolute bottom-[40px] right-[40px] cursor-pointer"
+              onClick={() => setOpenAddNewStatusDialog(true)}
+            >
+              <FaPlus size={20} />
+            </Button>
+            {openAddNewStatusDialog && (
+              <CreateStatusDialog
+                open={openAddNewStatusDialog}
+                onOpenChange={setOpenAddNewStatusDialog}
+                onCancel={() => setOpenAddNewStatusDialog(false)}
+                onSave={() => setOpenAddNewStatusDialog(false)}
+              />
+            )}
+          </div>
         </div>
+        <div className="flex-1 flex flex-col gap-3 items-end">
+          <Button variant="outline">Save workflow</Button>
+          <div className=" border rounded-md flex flex-col gap-4 p-2">
+            {taskStatuses?.map((taskStatus) => (<div key={taskStatus.id} className="border rounded-md p-2">
+              <div className="flex items-center gap-2">
+                <span className="w-[15px] aspect-square rounded-full" style={{ backgroundColor: taskStatus.color, boxShadow: `0 0 5px 1px ${taskStatus.color}`, }}></span>
+                <span className="font-medium">{taskStatus.text}</span>
+              </div>
+              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas vitae sem sollicitudin ex</p>
+            </div>))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ProjectDetails, TaskStatus } from "@/interface/common";
-import { Task } from "@/interface/kanban";
+import { Task, Transition } from "@/interface/kanban";
 import { GoPlus } from "react-icons/go";
 import { useDroppable } from "@dnd-kit/core";
 import KanbanCard from "../KanbanCard";
 import { cn } from "@/lib/utils";
 import AddTaskDialog from "../AddTaskDialog";
+import { useMemo } from "react";
 
 const KanbanBoardColumn = ({
   taskStatus,
@@ -16,6 +17,8 @@ const KanbanBoardColumn = ({
   setOpenAddTaskDialog,
   projectId,
   setEditTask,
+  projectTransitions,
+  activeTaskStatusId,
 }: {
   taskStatus: TaskStatus;
   tasksOfStatus: Task[];
@@ -24,17 +27,23 @@ const KanbanBoardColumn = ({
   setOpenAddTaskDialog: (open: boolean) => void;
   projectId: string;
   setEditTask: (task: Task) => void;
+  projectTransitions: Transition[];
+  activeTaskStatusId: string;
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: taskStatus.id,
   });
+  const updatable = useMemo(() => {
+    return projectTransitions?.some(t => t?.toTaskStatusId === taskStatus.id && t?.fromTaskStatusId === activeTaskStatusId)
+  }, [projectTransitions, taskStatus.id, activeTaskStatusId])
   return (
     <div
       key={taskStatus.id}
       ref={setNodeRef}
       className={cn(
         "flex w-[280px] bg-neutral-100 shrink-0 rounded-md border border-neutral-2/5000 flex-col gap-2 pb-2",
-        isOver && "bg-sky-500/10 border-sky-500"
+        !updatable && !!activeTaskStatusId && "opacity-30",
+        isOver && (updatable ? "bg-sky-500/10 border-sky-500" : "opacity-30")
       )}
     >
       <div className="flex flex-col gap-2 flex-1">

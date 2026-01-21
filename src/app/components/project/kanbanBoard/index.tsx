@@ -8,7 +8,7 @@ import { PiSlidersHorizontal } from "react-icons/pi";
 import { ProjectDetails, TaskStatus } from "@/interface/common";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { getTasksOfProject, updateTaskStatus } from "@/api/task";
+import { getTasksOfProject, updateTask, updateTaskStatus } from "@/api/task";
 import { getProjectDetails } from "@/api/project";
 import { useState } from "react";
 import { DndContext, DragOverlay, useSensor, useSensors } from "@dnd-kit/core";
@@ -34,7 +34,7 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
 
   const { mutate: updateTaskStatusMutation } = useMutation({
     mutationFn: ({ taskId, statusId }: { taskId: string; statusId: string }) =>
-      updateTaskStatus({ taskId, statusId }),
+      updateTask(taskId, { taskStatusId: statusId }),
     onSuccess: (response, variables) => {
       console.log(response, variables);
     },
@@ -48,6 +48,8 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
     queryFn: () => getProjectDetails(projectId),
     enabled: !!projectId,
   });
+
+  console.log(projectDetails);
 
   const sensors = useSensors(
     useSensor(SafePointerSensor)
@@ -101,6 +103,11 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
         onDragEnd={({ active, over }) => {
           setActiveTaskId(null);
           if (!over) return;
+          if(active?.data?.current?.taskStatusId === over.id) return;
+          if (!projectDetails?.transitions?.some(t => t?.toTaskStatusId === over.id && t?.fromTaskStatusId === active?.data?.current?.taskStatusId)) {
+            toast.error("The update does not follow the work flow, please check again, or update the workflow via the setting menu");
+            return;
+          }
           queryClient.setQueryData(["tasks", projectId], (old: any) => {
             if (!old?.data) return old;
             const task = old.data.find((t: any) => t.id === active.id);
@@ -144,6 +151,8 @@ const KanbanBoard = ({ taskStatuses }: { taskStatuses: TaskStatus[] }) => {
                   tasksOfStatus={tasksOfStatus}
                   key={taskStatus.id}
                   setEditTask={setEditTask}
+                  activeTaskStatusId={tasks?.data?.find((t) => t?.id === activeTaskId)?.taskStatusId}
+                  projectTransitions={projectDetails?.transitions || []}
                 />
               );
             })}

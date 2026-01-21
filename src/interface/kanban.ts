@@ -70,3 +70,9 @@ export interface IUpdateTaskPayload {
     addedAttachments?: ICreateTaskAttachment[];
     deletedAttachments?: string[];
 }
+
+export interface Transition {
+    id: string;
+    fromTaskStatusId: string;
+    toTaskStatusId: string;
+}

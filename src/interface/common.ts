@@ -1,3 +1,5 @@
+import { Transition } from "./kanban";
+
 export interface TaskStatus {
     id: string;
     text: string;
@@ -37,6 +39,7 @@ export interface ProjectDetails {
     projectRole?: string;
     taskStatuses: TaskStatus[];
     projectCollaborators: projectCollaborator[];
+    transitions: Transition[];
 }
 
 export interface SelectItem {

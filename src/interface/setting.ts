@@ -13,3 +13,9 @@ export interface CreateTaskStatusDto {
     text: string;
     color: string;
 }
+
+export interface CreateTransitionDto {
+    fromTaskStatusId: string;
+    toTaskStatusId: string;
+    projectId: string;
+}
